@@ -112,7 +112,11 @@ def loader(texto, emoji="⚙️", min_seg=2.5):
 
 
 # Configuración de la página web
-st.set_page_config(page_title="LogiRestock", page_icon="⚡", layout="centered")
+st.set_page_config(
+    page_title="RodaRestock",
+    page_icon="logo.jpg",  
+    layout="centered"
+)
 
 # Estilo visual limpio
 st.markdown("""
