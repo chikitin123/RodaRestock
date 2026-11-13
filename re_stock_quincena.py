@@ -125,7 +125,6 @@ def loader(texto, emoji="⚡", min_seg=0.5):
             time.sleep(restante)
         ph.empty()
 
-
 st.set_page_config(
     page_title="RodaRestock",
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
@@ -447,9 +446,9 @@ with tab_calculo:
                             df_final['cantidad_a_transferir'] = df_final.apply(calcular_reposicion, axis=1)
                             df_final['pedido'] = df_final['cantidad_a_transferir']
                             
-                            # AQUí ESTÁ LA REGLA: Si el pedido es 0 o vacío, la sucursal va en blanco ("")
+                            # AQUÍ ESTÁ LA LÓGICA CORRECTA: Si el pedido es mayor a 0, coloca la sucursal de referencia; si es 0 o menor, se queda vacío ("")
                             sucu_ref = 'Dansey' if almacen_destino == 'San Luis' else 'San Luis'
-                            df_final['sucursal'] = df_final['pedido'].apply(lambda x: sucu_ref if pd.notna(x) and x != 0 else "")
+                            df_final['sucursal'] = df_final['pedido'].apply(lambda x: sucu_ref if pd.notna(x) and x > 0 else "")
 
                             columnas_ordenadas = [
                                 'codigo_comercial', 'codi_interno', 'descripcion', 'marca', 'cant_caja',
@@ -494,7 +493,7 @@ with tab_calculo:
                             
                             worksheet = writer.sheets['Sheet1']
                             
-                            # Restauración de estilos (líneas punteadas y colores de columnas)
+                            # Restauración completa de bordes punteados y colores
                             lado_punteado = Side(border_style="dotted", color="000000")
                             borde_punteado = Border(
                                 left=lado_punteado, right=lado_punteado,
