@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-io = __import__('io')
+import io
 import os
 import xlwt
 import time
 from contextlib import contextmanager
-from openpyxl.styles import Border, Side
+from openpyxl.styles import Border, Side, PatternFill
 
 # =====================================================================
 # GENERADOR DE PLANTILLAS NAVASOFT (.xls) - misma estructura que la original
@@ -114,7 +114,7 @@ def loader(texto, emoji="⚙️", min_seg=2.5):
 
 # Configuración de la página web
 st.set_page_config(
-    page_title="RodaRestock",
+    page_title="RodaStock",
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
     layout="centered"
 )
@@ -491,21 +491,34 @@ with tab_calculo:
                         with pd.ExcelWriter(output, engine='openpyxl') as writer:
                             df_final_ordenado.to_excel(writer, index=False)
                             
-                            # Definimos worksheet y aplicamos los bordes punteados para TODOS los casos
                             worksheet = writer.sheets['Sheet1']
+                            
+                            # 1. Estilos: Bordes punteados y rellenos de color suave
                             lado_punteado = Side(border_style="dotted", color="000000")
                             borde_punteado = Border(
                                 left=lado_punteado, right=lado_punteado,
                                 top=lado_punteado, bottom=lado_punteado
                             )
+                            fill_rosado = PatternFill(start_color="FCE7F3", end_color="FCE7F3", fill_type="solid")
+                            fill_verde = PatternFill(start_color="DCFCE7", end_color="DCFCE7", fill_type="solid")
+
+                            # Localizar dinámicamente las columnas por nombre (base 1 en Excel)
+                            cols_list = list(df_final_ordenado.columns)
+                            col_idx_transferir = cols_list.index('cantidad_a_transferir') + 1
+                            col_idx_pedido = cols_list.index('pedido') + 1
+
                             max_fila = len(df_final_ordenado) + 1
-                            max_col = len(df_final_ordenado.columns)
+                            max_col = len(cols_list)
 
                             for row in worksheet.iter_rows(min_row=1, max_row=max_fila, min_col=1, max_col=max_col):
                                 for cell in row:
                                     cell.border = borde_punteado
+                                    if cell.column == col_idx_transferir:
+                                        cell.fill = fill_rosado
+                                    elif cell.column == col_idx_pedido:
+                                        cell.fill = fill_verde
 
-                            # Si es provincia, agrega la fórmula en la columna N
+                            # 2. Fórmula para provincias
                             if es_provincia:
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
                                     worksheet[f'N{row_idx}'] = f'=IF(M{row_idx}<=0, "-", IF(M{row_idx}<=I{row_idx}, "Dansey", "San Luis"))'
