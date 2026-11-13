@@ -7,6 +7,7 @@ import time
 from contextlib import contextmanager
 from openpyxl.styles import Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
+from plyer import notification
 
 # =====================================================================
 # GENERADOR DE PLANTILLAS NAVASOFT (.xls) - misma estructura que la original
@@ -498,7 +499,6 @@ with tab_calculo:
                                     elif cell.column == col_idx_pedido:
                                         cell.fill = fill_verde
 
-                            # Fórmula dinámica apuntando al 'pedido' (M) en lugar de 'cantidad_a_transferir' (L)
                             if es_provincia:
                                 col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
                                 col_let_dansey = get_column_letter(cols_list.index('DANSEY') + 1)
@@ -508,6 +508,17 @@ with tab_calculo:
                                     worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "-", IF({col_let_pedido}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
 
                         output.seek(0)
+                        
+                        # LANZAR NOTIFICACIÓN FLOTANTE DE WINDOWS
+                        try:
+                            notification.notify(
+                                title="RodaRestock 📦",
+                                message=f"¡El reporte para {almacen_destino} ha finalizado con éxito!",
+                                timeout=5
+                            )
+                        except Exception:
+                            pass
+
                         st.success(f"¡Cálculo maestro para **{almacen_destino}** completado con éxito!")
                         st.download_button(
                             label=f"📥 Descargar Reporte de {almacen_destino}",
@@ -533,6 +544,14 @@ with tab_navasoft:
             if res['dansey'][1] == 0 and res['san luis'][1] == 0:
                 st.warning("No se encontraron ítems con pedido mayor a 0 para Dansey o San Luis.")
             else:
+                try:
+                    notification.notify(
+                        title="RodaRestock 📦",
+                        message="¡Las plantillas Navasoft se generaron con éxito!",
+                        timeout=5
+                    )
+                except Exception:
+                    pass
                 st.success("¡Plantillas generadas! Ya puedes descargarlas abajo.")
         except Exception as e:
             st.error(f"Error al procesar las plantillas: {e}")
