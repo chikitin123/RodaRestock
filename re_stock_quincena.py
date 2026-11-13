@@ -10,21 +10,14 @@ from openpyxl.styles import Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 
 # =====================================================================
-# FUNCIÓN DE NOTIFICACIÓN NATIVA DE WINDOWS (Visible en cualquier pantalla)
+# FUNCIÓN DE ALERTA EMERGENTE (Salta al frente en cualquier pantalla)
 # =====================================================================
-pythoncom_cargado = False
-
 def mostrar_notificacion_windows(titulo, mensaje):
-    """Muestra una burbuja de notificación en la bandeja de sistema de Windows."""
+    """Muestra una ventana emergente flotante al frente de todo en Windows."""
     try:
         ps_comando = f"""
-        Add-Type -AssemblyName System.Windows.Forms
-        $notification = New-Object System.Windows.Forms.NotifyIcon
-        $notification.Icon = [System.Drawing.SystemIcons]::Information
-        $notification.Visible = $true
-        $notification.ShowBalloonTip(6000, '{titulo}', '{mensaje}', [System.Windows.Forms.ToolTipIcon]::Info)
-        Start-Sleep -Seconds 7
-        $notification.Dispose()
+        Add-Type -AssemblyName PresentationCore,PresentationFramework
+        [System.Windows.MessageBox]::Show('{mensaje}', '{titulo}', 'OK', 'Information')
         """
         subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps_comando], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
@@ -547,7 +540,7 @@ with tab_calculo:
 
                         output.seek(0)
                         
-                        # LANZAR NOTIFICACIÓN NATIVA EN CUALQUIER PANTALLA DE WINDOWS
+                        # LANZAR VENTANA EMERGENTE AL FRENTE EN WINDOWS
                         mostrar_notificacion_windows("RodaRestock 📦", f"¡El reporte para {almacen_destino} ha finalizado con éxito!")
 
                         st.success(f"¡Cálculo maestro para **{almacen_destino}** completado con éxito!")
