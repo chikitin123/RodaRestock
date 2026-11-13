@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
-import io
+io = __import__('io')
 import os
 import xlwt
 import time
 from contextlib import contextmanager
+from openpyxl.styles import Border, Side
 
 # =====================================================================
 # GENERADOR DE PLANTILLAS NAVASOFT (.xls) - misma estructura que la original
@@ -489,8 +490,23 @@ with tab_calculo:
                         output = io.BytesIO()
                         with pd.ExcelWriter(output, engine='openpyxl') as writer:
                             df_final_ordenado.to_excel(writer, index=False)
+                            
+                            # Definimos worksheet y aplicamos los bordes punteados para TODOS los casos
+                            worksheet = writer.sheets['Sheet1']
+                            lado_punteado = Side(border_style="dotted", color="000000")
+                            borde_punteado = Border(
+                                left=lado_punteado, right=lado_punteado,
+                                top=lado_punteado, bottom=lado_punteado
+                            )
+                            max_fila = len(df_final_ordenado) + 1
+                            max_col = len(df_final_ordenado.columns)
+
+                            for row in worksheet.iter_rows(min_row=1, max_row=max_fila, min_col=1, max_col=max_col):
+                                for cell in row:
+                                    cell.border = borde_punteado
+
+                            # Si es provincia, agrega la fórmula en la columna N
                             if es_provincia:
-                                worksheet = writer.sheets['Sheet1']
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
                                     worksheet[f'N{row_idx}'] = f'=IF(M{row_idx}<=0, "-", IF(M{row_idx}<=I{row_idx}, "Dansey", "San Luis"))'
 
