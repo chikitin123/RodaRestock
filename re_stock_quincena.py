@@ -4,12 +4,28 @@ import io
 import os
 import xlwt
 import time
+import subprocess
 from contextlib import contextmanager
 from openpyxl.styles import Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 
 # =====================================================================
-# GENERADOR DE PLANTILLAS NAVASOFT (.xls) - Lógica idéntica
+# FUNCIÓN DE ALERTA EMERGENTE (Salta al frente en cualquier pantalla)
+# =====================================================================
+def mostrar_notificacion_windows(titulo, mensaje):
+    """Muestra una ventana emergente flotante al frente de todo en Windows."""
+    try:
+        ps_comando = f"""
+        Add-Type -AssemblyName PresentationCore,PresentationFramework
+        [System.Windows.MessageBox]::Show('{mensaje}', '{titulo}', 'OK', 'Information')
+        """
+        subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps_comando], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+
+# =====================================================================
+# GENERADOR DE PLANTILLAS NAVASOFT (.xls)
 # =====================================================================
 CABECERAS_NAVASOFT = ['Codi', 'Codigo', 'Descripcion', 'Cantidad', 'Costo', 'Codalm']
 COD_ALMACEN = {'dansey': '08', 'san luis': '01'}
@@ -104,7 +120,7 @@ def procesar_maestro_navasoft(df_term):
 # LOADER ANIMADO
 # =====================================================================
 @contextmanager
-def loader(texto, emoji="⚡", min_seg=0.8):
+def loader(texto, emoji="⚙️", min_seg=2.5):
     inicio = time.time()
     ph = st.empty()
     ph.markdown(
@@ -221,7 +237,7 @@ with tab_calculo:
         if not archivos_ok:
             st.error("Por favor, sube todos los archivos requeridos antes de continuar.")
         else:
-            with loader(f"Procesando cálculo ultrarrápido para {almacen_destino}", "⚡"):
+            with loader(f"Procesando datos para {almacen_destino}", "⚡"):
                 try:
                     ruta_precios = "archivo_codigos_preciou.xlsx"
                     ruta_cajas = "numero_cajas.xlsx"
@@ -523,7 +539,11 @@ with tab_calculo:
                                     worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "-", IF({col_let_pedido}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
 
                         output.seek(0)
-                        st.success(f"¡Cálculo maestro para **{almacen_destino}** completado al 100% de precisión!")
+                        
+                        # LANZAR VENTANA EMERGENTE AL FRENTE EN WINDOWS
+                        mostrar_notificacion_windows("RodaRestock 📦", f"¡El reporte para {almacen_destino} ha finalizado con éxito!")
+
+                        st.success(f"¡Cálculo maestro para **{almacen_destino}** completado con éxito!")
                         st.download_button(
                             label=f"📥 Descargar Reporte de {almacen_destino}",
                             data=output,
@@ -548,6 +568,7 @@ with tab_navasoft:
             if res['dansey'][1] == 0 and res['san luis'][1] == 0:
                 st.warning("No se encontraron ítems con pedido mayor a 0 para Dansey o San Luis.")
             else:
+                mostrar_notificacion_windows("RodaRestock 📦", "¡Las plantillas Navasoft se generaron con éxito!")
                 st.success("¡Plantillas generadas! Ya puedes descargarlas abajo.")
         except Exception as e:
             st.error(f"Error al procesar las plantillas: {e}")
