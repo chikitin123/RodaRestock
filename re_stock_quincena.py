@@ -4,14 +4,35 @@ import io
 import os
 import xlwt
 import time
+import subprocess
 from contextlib import contextmanager
 from openpyxl.styles import Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
-from plyer import notification
 
 # =====================================================================
-# GENERADOR DE PLANTILLAS NAVASOFT (.xls) - misma estructura que la original
-# Hoja1 | Codi, Codigo, Descripcion, Cantidad, Costo, Codalm
+# FUNCIÓN DE NOTIFICACIÓN NATIVA DE WINDOWS (Visible en cualquier pantalla)
+# =====================================================================
+pythoncom_cargado = False
+
+def mostrar_notificacion_windows(titulo, mensaje):
+    """Muestra una burbuja de notificación en la bandeja de sistema de Windows."""
+    try:
+        ps_comando = f"""
+        Add-Type -AssemblyName System.Windows.Forms
+        $notification = New-Object System.Windows.Forms.NotifyIcon
+        $notification.Icon = [System.Drawing.SystemIcons]::Information
+        $notification.Visible = $true
+        $notification.ShowBalloonTip(6000, '{titulo}', '{mensaje}', [System.Windows.Forms.ToolTipIcon]::Info)
+        Start-Sleep -Seconds 7
+        $notification.Dispose()
+        """
+        subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps_comando], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+
+# =====================================================================
+# GENERADOR DE PLANTILLAS NAVASOFT (.xls)
 # =====================================================================
 CABECERAS_NAVASOFT = ['Codi', 'Codigo', 'Descripcion', 'Cantidad', 'Costo', 'Codalm']
 COD_ALMACEN = {'dansey': '08', 'san luis': '01'}
@@ -77,7 +98,6 @@ def procesar_maestro_navasoft(df_term):
     df['pedido'] = pd.to_numeric(df['pedido'], errors='coerce')
     df = df[df['pedido'] > 0]
 
-    # Determinación inteligente de almacén (soporta celdas con fórmulas o texto directo)
     if 'DANSEY' in df.columns and 'SAN LUIS' in df.columns:
         df['sucursal_calc'] = df.apply(
             lambda r: 'dansey' if pd.to_numeric(r['pedido'], errors='coerce') <= pd.to_numeric(r['DANSEY'], errors='coerce') else 'san luis',
@@ -527,14 +547,8 @@ with tab_calculo:
 
                         output.seek(0)
                         
-                        try:
-                            notification.notify(
-                                title="RodaRestock 📦",
-                                message=f"¡El reporte para {almacen_destino} ha finalizado con éxito!",
-                                timeout=5
-                            )
-                        except Exception:
-                            pass
+                        # LANZAR NOTIFICACIÓN NATIVA EN CUALQUIER PANTALLA DE WINDOWS
+                        mostrar_notificacion_windows("RodaRestock 📦", f"¡El reporte para {almacen_destino} ha finalizado con éxito!")
 
                         st.success(f"¡Cálculo maestro para **{almacen_destino}** completado con éxito!")
                         st.download_button(
@@ -561,14 +575,7 @@ with tab_navasoft:
             if res['dansey'][1] == 0 and res['san luis'][1] == 0:
                 st.warning("No se encontraron ítems con pedido mayor a 0 para Dansey o San Luis.")
             else:
-                try:
-                    notification.notify(
-                        title="RodaRestock 📦",
-                        message="¡Las plantillas Navasoft se generaron con éxito!",
-                        timeout=5
-                    )
-                except Exception:
-                    pass
+                mostrar_notificacion_windows("RodaRestock 📦", "¡Las plantillas Navasoft se generaron con éxito!")
                 st.success("¡Plantillas generadas! Ya puedes descargarlas abajo.")
         except Exception as e:
             st.error(f"Error al procesar las plantillas: {e}")
