@@ -68,7 +68,7 @@ def generar_xls_navasoft(filas):
 
 
 def procesar_maestro_navasoft(df_term):
-    req = ['codi_interno', 'codigo_comercial', 'descripcion', 'pedido', 'precio_unitario', 'sucursal']
+    req = ['codi_interno', 'codigo_comercial', 'descripcion', 'pedido', 'precio_unitario']
     faltan = [c for c in req if c not in df_term.columns]
     if faltan:
         raise ValueError(f"Faltan columnas en el archivo: {', '.join(faltan)}")
@@ -76,11 +76,29 @@ def procesar_maestro_navasoft(df_term):
     df = df_term.copy()
     df['pedido'] = pd.to_numeric(df['pedido'], errors='coerce')
     df = df[df['pedido'] > 0]
-    suc = df['sucursal'].astype(str).str.strip().str.lower()
+
+    # Determinación inteligente de almacén (soporta celdas con fórmulas o texto directo)
+    if 'DANSEY' in df.columns and 'SAN LUIS' in df.columns:
+        df['sucursal_calc'] = df.apply(
+            lambda r: 'dansey' if pd.to_numeric(r['pedido'], errors='coerce') <= pd.to_numeric(r['DANSEY'], errors='coerce') else 'san luis',
+            axis=1
+        )
+    elif 'sucursal' in df.columns:
+        suc_str = df['sucursal'].astype(str).str.strip().str.lower()
+        if suc_str.str.startswith('=').any() and 'DANSEY' in df.columns:
+            df['sucursal_calc'] = df.apply(
+                lambda r: 'dansey' if pd.to_numeric(r['pedido'], errors='coerce') <= pd.to_numeric(r['DANSEY'], errors='coerce') else 'san luis',
+                axis=1
+            )
+        else:
+            df['sucursal_calc'] = suc_str
+    else:
+        df['sucursal_calc'] = 'dansey'
 
     out = {}
     for nombre, cod in COD_ALMACEN.items():
-        filas = armar_filas_navasoft(df[suc == nombre], cod)
+        sub_df = df[df['sucursal_calc'] == nombre]
+        filas = armar_filas_navasoft(sub_df, cod)
         out[nombre] = (generar_xls_navasoft(filas), len(filas)) if filas else (None, 0)
     return out
 
@@ -509,7 +527,6 @@ with tab_calculo:
 
                         output.seek(0)
                         
-                        # LANZAR NOTIFICACIÓN FLOTANTE DE WINDOWS
                         try:
                             notification.notify(
                                 title="RodaRestock 📦",
