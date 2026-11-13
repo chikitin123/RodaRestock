@@ -39,8 +39,6 @@ def armar_filas_navasoft(df, cod_almacen):
 
 
 def generar_xls_navasoft(filas):
-    """Crea el .xls (BIFF8) igual a PLANTILLA NAVASOFT: hoja 'Hoja1', cabecera en fila 1,
-    datos desde la fila 2 y sin filas vacías debajo. Devuelve bytes."""
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('Hoja1')
 
@@ -87,11 +85,10 @@ def procesar_maestro_navasoft(df_term):
 
 
 # =====================================================================
-# LOADER ANIMADO (icono llamativo mientras se procesa)
+# LOADER ANIMADO
 # =====================================================================
 @contextmanager
 def loader(texto, emoji="⚙️", min_seg=2.5):
-    """Muestra el loader y lo mantiene al menos `min_seg` segundos (aunque el proceso sea más rápido)."""
     inicio = time.time()
     ph = st.empty()
     ph.markdown(
@@ -113,14 +110,12 @@ def loader(texto, emoji="⚙️", min_seg=2.5):
         ph.empty()
 
 
-# Configuración de la página web
 st.set_page_config(
     page_title="RodaRestock",
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
     layout="centered"
 )
 
-# Estilo visual limpio
 st.markdown("""
     <style>
     .main { background-color: #0f172a; color: #f1f5f9; }
@@ -144,20 +139,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# =====================================================================
-# ENCABEZADO: LOGO Y TÍTULO MÁS GRANDES ARRIBA (EDITABLES)
-# =====================================================================
-
 TITULO_APP = "RodaRestock"
 SUBTITULO_APP = "Sistema inteligente de Cálculo de Reposición"
-
 archivo_logo = "logo.jpg"
 
 if os.path.exists(archivo_logo):
     import base64
     with open(archivo_logo, "rb") as img_file:
         encoded_img = base64.b64encode(img_file.read()).decode()
-    
     st.markdown(f"""
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 20px; margin-bottom: 10px;">
             <div style="display: flex; align-items: center; gap: 20px;">
@@ -177,7 +166,6 @@ else:
 
 st.divider()
 
-# Pestañas principales definidas correctamente
 tab_calculo, tab_navasoft = st.tabs(["📊 1. Cálculo y Maestro de Transferencias", "📦 2. Generar Plantillas Navasoft (Dansey / San Luis)"])
 
 with tab_calculo:
@@ -487,7 +475,6 @@ with tab_calculo:
                             
                             worksheet = writer.sheets['Sheet1']
                             
-                            # Estilos: Bordes punteados y rellenos de color suave
                             lado_punteado = Side(border_style="dotted", color="000000")
                             borde_punteado = Border(
                                 left=lado_punteado, right=lado_punteado,
@@ -511,14 +498,14 @@ with tab_calculo:
                                     elif cell.column == col_idx_pedido:
                                         cell.fill = fill_verde
 
-                            # Fórmula dinámica y automática para provincias (funciona para CUALQUIER sucursal)
+                            # Fórmula dinámica apuntando al 'pedido' (M) en lugar de 'cantidad_a_transferir' (L)
                             if es_provincia:
-                                col_let_transf = get_column_letter(cols_list.index('cantidad_a_transferir') + 1)
+                                col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
                                 col_let_dansey = get_column_letter(cols_list.index('DANSEY') + 1)
                                 col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
 
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
-                                    worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_transf}{row_idx}<=0, "-", IF({col_let_transf}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
+                                    worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "-", IF({col_let_pedido}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
 
                         output.seek(0)
                         st.success(f"¡Cálculo maestro para **{almacen_destino}** completado con éxito!")
@@ -537,7 +524,7 @@ with tab_navasoft:
     f_terminado = st.file_uploader("Sube tu Excel de Transferencia Terminado", type=["xlsx"], key="terminado_uploader")
 
     if f_terminado and st.button("🚀 Procesar Plantillas Navasoft"):
-        st.session_state.pop('nav', None)  # limpia descargas anteriores al empezar
+        st.session_state.pop('nav', None)
         try:
             with loader("Leyendo y generando plantillas Navasoft", "📦"):
                 df_term = pd.read_excel(f_terminado, engine='openpyxl')
