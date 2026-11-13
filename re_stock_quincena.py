@@ -5,6 +5,8 @@ import os
 import xlwt
 import time
 from contextlib import contextmanager
+from openpyxl.styles import Border, Side, PatternFill
+from openpyxl.utils import get_column_letter
 
 # =====================================================================
 # GENERADOR DE PLANTILLAS NAVASOFT (.xls) - Lógica idéntica
@@ -123,6 +125,7 @@ def loader(texto, emoji="⚡", min_seg=0.5):
             time.sleep(restante)
         ph.empty()
 
+
 st.set_page_config(
     page_title="RodaRestock",
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
@@ -218,7 +221,7 @@ with tab_calculo:
         if not archivos_ok:
             st.error("Por favor, sube todos los archivos requeridos antes de continuar.")
         else:
-            with loader(f"Procesando reporte ultrarrápido para {almacen_destino}", "⚡"):
+            with loader(f"Procesando reporte para {almacen_destino}", "⚡"):
                 try:
                     ruta_precios = "archivo_codigos_preciou.xlsx"
                     ruta_cajas = "numero_cajas.xlsx"
@@ -444,9 +447,9 @@ with tab_calculo:
                             df_final['cantidad_a_transferir'] = df_final.apply(calcular_reposicion, axis=1)
                             df_final['pedido'] = df_final['cantidad_a_transferir']
                             
-                            # AQUÍ ESTÁ EL AJUSTE: Si el pedido es mayor a 0 muestra la sucursal, si es 0 o vacío se queda en blanco ("")
+                            # AQUí ESTÁ LA REGLA: Si el pedido es 0 o vacío, la sucursal va en blanco ("")
                             sucu_ref = 'Dansey' if almacen_destino == 'San Luis' else 'San Luis'
-                            df_final['sucursal'] = df_final['pedido'].apply(lambda x: sucu_ref if pd.notna(x) and x > 0 else "")
+                            df_final['sucursal'] = df_final['pedido'].apply(lambda x: sucu_ref if pd.notna(x) and x != 0 else "")
 
                             columnas_ordenadas = [
                                 'codigo_comercial', 'codi_interno', 'descripcion', 'marca', 'cant_caja',
@@ -489,12 +492,36 @@ with tab_calculo:
                         with pd.ExcelWriter(output, engine='openpyxl') as writer:
                             df_final_ordenado.to_excel(writer, index=False)
                             
+                            worksheet = writer.sheets['Sheet1']
+                            
+                            # Restauración de estilos (líneas punteadas y colores de columnas)
+                            lado_punteado = Side(border_style="dotted", color="000000")
+                            borde_punteado = Border(
+                                left=lado_punteado, right=lado_punteado,
+                                top=lado_punteado, bottom=lado_punteado
+                            )
+                            fill_rosado = PatternFill(start_color="FCE7F3", end_color="FCE7F3", fill_type="solid")
+                            fill_verde = PatternFill(start_color="DCFCE7", end_color="DCFCE7", fill_type="solid")
+
+                            cols_list = list(df_final_ordenado.columns)
+                            col_idx_transferir = cols_list.index('cantidad_a_transferir') + 1
+                            col_idx_pedido = cols_list.index('pedido') + 1
+
+                            max_fila = len(df_final_ordenado) + 1
+                            max_col = len(cols_list)
+
+                            for row in worksheet.iter_rows(min_row=1, max_row=max_fila, min_col=1, max_col=max_col):
+                                for cell in row:
+                                    cell.border = borde_punteado
+                                    if cell.column == col_idx_transferir:
+                                        cell.fill = fill_rosado
+                                    elif cell.column == col_idx_pedido:
+                                        cell.fill = fill_verde
+
                             if es_provincia:
-                                worksheet = writer.sheets['Sheet1']
-                                cols_list = list(df_final_ordenado.columns)
-                                col_let_pedido = chr(65 + cols_list.index('pedido'))
-                                col_let_dansey = chr(65 + cols_list.index('DANSEY'))
-                                col_let_sucursal = chr(65 + cols_list.index('sucursal'))
+                                col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
+                                col_let_dansey = get_column_letter(cols_list.index('DANSEY') + 1)
+                                col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
 
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
                                     worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "-", IF({col_let_pedido}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
