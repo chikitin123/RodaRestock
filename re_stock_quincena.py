@@ -112,11 +112,7 @@ def loader(texto, emoji="⚙️", min_seg=2.5):
 
 
 # Configuración de la página web
-st.set_page_config(
-    page_title="RodaRestock",
-    page_icon="logo.jpg",  
-    layout="centered"
-)
+st.set_page_config(page_title="RodaRestock", page_icon="📦", layout="centered")
 
 # Estilo visual limpio
 st.markdown("""
@@ -146,7 +142,6 @@ st.markdown("""
 # ENCABEZADO: LOGO Y TÍTULO MÁS GRANDES ARRIBA (EDITABLES)
 # =====================================================================
 
-# ✏️ Puedes cambiar estos textos cuando quieras directamente aquí:
 TITULO_APP = "RodaRestock"
 SUBTITULO_APP = "Sistema inteligente de Cálculo de Reposición"
 
@@ -266,7 +261,7 @@ with tab_calculo:
                         col_marca_crit = next((c for c in df_crit.columns if 'marca' in str(c).lower()), df_crit.columns[5] if len(df_crit.columns) > 5 else None)
                         col_stk_dest = next((c for c in df_crit.columns if 'stock' in str(c).lower() or 'stoc' in str(c).lower()), df_crit.columns[-1] if len(df_crit.columns) > 0 else None)
 
-                        nombre_col_dest = f'stock_{almacen_destino.lower()}_fisico'
+                        nombre_col_dest = almacen_destino.upper()
                         lista_base = []
 
                         for idx, row in df_crit.iterrows():
@@ -425,7 +420,7 @@ with tab_calculo:
                         df_final = df_maestro_base.copy()
 
                         if not es_provincia:
-                            nombre_col_ref = 'stock_dansey_fisico' if almacen_destino == 'San Luis' else 'stock_sanluis_fisico'
+                            nombre_col_ref = 'DANSEY' if almacen_destino == 'San Luis' else 'SAN LUIS'
                             stk_ref = procesar_stock_sisco_con_marca(f_stk_ref, nombre_col_ref)
 
                             df_final = pd.merge(df_final, stk_ref, left_on=['codigo_comercial', 'marca'], right_on=['codigo_comercial', 'marca'], how='left')
@@ -452,15 +447,15 @@ with tab_calculo:
                                 'precio_unitario', 'cantidad_a_transferir', 'pedido', 'sucursal', 'estado_reposicion'
                             ]
                         else:
-                            stk_dan = procesar_stock_sisco_con_marca(f_stk_dansey, 'stock_dansey_fisico')
-                            stk_sl = procesar_stock_sisco_con_marca(f_stk_sanluis, 'stock_sanluis_fisico')
+                            stk_dan = procesar_stock_sisco_con_marca(f_stk_dansey, 'DANSEY')
+                            stk_sl = procesar_stock_sisco_con_marca(f_stk_sanluis, 'SAN LUIS')
 
                             df_final = pd.merge(df_final, stk_dan, left_on=['codigo_comercial', 'marca'], right_on=['codigo_comercial', 'marca'], how='left')
                             df_final = pd.merge(df_final, stk_sl, left_on=['codigo_comercial', 'marca'], right_on=['codigo_comercial', 'marca'], how='left', suffixes=('_dan', '_sl'))
 
                             df_final[nombre_col_dest] = df_final[nombre_col_dest].fillna(0)
-                            if 'stock_dansey_fisico' in df_final.columns: df_final['stock_dansey_fisico'] = df_final['stock_dansey_fisico'].fillna(0)
-                            if 'stock_sanluis_fisico' in df_final.columns: df_final['stock_sanluis_fisico'] = df_final['stock_sanluis_fisico'].fillna(0)
+                            if 'DANSEY' in df_final.columns: df_final['DANSEY'] = df_final['DANSEY'].fillna(0)
+                            if 'SAN LUIS' in df_final.columns: df_final['SAN LUIS'] = df_final['SAN LUIS'].fillna(0)
 
                             def calcular_reposicion_prov(row):
                                 ventas = row['total_general']
@@ -481,7 +476,7 @@ with tab_calculo:
                             columnas_ordenadas = [
                                 'codigo_comercial', 'codi_interno', 'descripcion', 'marca', 'cant_caja',
                                 'total_general', 'mayor_promedio_mensual', nombre_col_dest,
-                                'stock_dansey_fisico', 'stock_sanluis_fisico',
+                                'DANSEY', 'SAN LUIS',
                                 'precio_unitario', 'cantidad_a_transferir', 'pedido', 'sucursal', 'estado_reposicion'
                             ]
 
