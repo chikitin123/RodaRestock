@@ -4,28 +4,10 @@ import io
 import os
 import xlwt
 import time
-import subprocess
 from contextlib import contextmanager
-from openpyxl.styles import Border, Side, PatternFill
-from openpyxl.utils import get_column_letter
 
 # =====================================================================
-# FUNCIÓN DE ALERTA EMERGENTE (Salta al frente en cualquier pantalla)
-# =====================================================================
-def mostrar_notificacion_windows(titulo, mensaje):
-    """Muestra una ventana emergente flotante al frente de todo en Windows."""
-    try:
-        ps_comando = f"""
-        Add-Type -AssemblyName PresentationCore,PresentationFramework
-        [System.Windows.MessageBox]::Show('{mensaje}', '{titulo}', 'OK', 'Information')
-        """
-        subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps_comando], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception:
-        pass
-
-
-# =====================================================================
-# GENERADOR DE PLANTILLAS NAVASOFT (.xls)
+# GENERADOR DE PLANTILLAS NAVASOFT (.xls) - Lógica idéntica
 # =====================================================================
 CABECERAS_NAVASOFT = ['Codi', 'Codigo', 'Descripcion', 'Cantidad', 'Costo', 'Codalm']
 COD_ALMACEN = {'dansey': '08', 'san luis': '01'}
@@ -120,7 +102,7 @@ def procesar_maestro_navasoft(df_term):
 # LOADER ANIMADO
 # =====================================================================
 @contextmanager
-def loader(texto, emoji="⚙️", min_seg=2.5):
+def loader(texto, emoji="⚡", min_seg=0.5):
     inicio = time.time()
     ph = st.empty()
     ph.markdown(
@@ -140,7 +122,6 @@ def loader(texto, emoji="⚙️", min_seg=2.5):
         if restante > 0:
             time.sleep(restante)
         ph.empty()
-
 
 st.set_page_config(
     page_title="RodaRestock",
@@ -237,7 +218,7 @@ with tab_calculo:
         if not archivos_ok:
             st.error("Por favor, sube todos los archivos requeridos antes de continuar.")
         else:
-            with loader(f"Procesando datos para {almacen_destino}", "⚡"):
+            with loader(f"Procesando reporte ultrarrápido para {almacen_destino}", "⚡"):
                 try:
                     ruta_precios = "archivo_codigos_preciou.xlsx"
                     ruta_cajas = "numero_cajas.xlsx"
@@ -462,7 +443,10 @@ with tab_calculo:
 
                             df_final['cantidad_a_transferir'] = df_final.apply(calcular_reposicion, axis=1)
                             df_final['pedido'] = df_final['cantidad_a_transferir']
-                            df_final['sucursal'] = 'Dansey' if almacen_destino == 'San Luis' else 'San Luis'
+                            
+                            # AQUÍ ESTÁ EL AJUSTE: Si el pedido es mayor a 0 muestra la sucursal, si es 0 o vacío se queda en blanco ("")
+                            sucu_ref = 'Dansey' if almacen_destino == 'San Luis' else 'San Luis'
+                            df_final['sucursal'] = df_final['pedido'].apply(lambda x: sucu_ref if pd.notna(x) and x > 0 else "")
 
                             columnas_ordenadas = [
                                 'codigo_comercial', 'codi_interno', 'descripcion', 'marca', 'cant_caja',
@@ -505,45 +489,18 @@ with tab_calculo:
                         with pd.ExcelWriter(output, engine='openpyxl') as writer:
                             df_final_ordenado.to_excel(writer, index=False)
                             
-                            worksheet = writer.sheets['Sheet1']
-                            
-                            lado_punteado = Side(border_style="dotted", color="000000")
-                            borde_punteado = Border(
-                                left=lado_punteado, right=lado_punteado,
-                                top=lado_punteado, bottom=lado_punteado
-                            )
-                            fill_rosado = PatternFill(start_color="FCE7F3", end_color="FCE7F3", fill_type="solid")
-                            fill_verde = PatternFill(start_color="DCFCE7", end_color="DCFCE7", fill_type="solid")
-
-                            cols_list = list(df_final_ordenado.columns)
-                            col_idx_transferir = cols_list.index('cantidad_a_transferir') + 1
-                            col_idx_pedido = cols_list.index('pedido') + 1
-
-                            max_fila = len(df_final_ordenado) + 1
-                            max_col = len(cols_list)
-
-                            for row in worksheet.iter_rows(min_row=1, max_row=max_fila, min_col=1, max_col=max_col):
-                                for cell in row:
-                                    cell.border = borde_punteado
-                                    if cell.column == col_idx_transferir:
-                                        cell.fill = fill_rosado
-                                    elif cell.column == col_idx_pedido:
-                                        cell.fill = fill_verde
-
                             if es_provincia:
-                                col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
-                                col_let_dansey = get_column_letter(cols_list.index('DANSEY') + 1)
-                                col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
+                                worksheet = writer.sheets['Sheet1']
+                                cols_list = list(df_final_ordenado.columns)
+                                col_let_pedido = chr(65 + cols_list.index('pedido'))
+                                col_let_dansey = chr(65 + cols_list.index('DANSEY'))
+                                col_let_sucursal = chr(65 + cols_list.index('sucursal'))
 
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
                                     worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "-", IF({col_let_pedido}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
 
                         output.seek(0)
-                        
-                        # LANZAR VENTANA EMERGENTE AL FRENTE EN WINDOWS
-                        mostrar_notificacion_windows("RodaRestock 📦", f"¡El reporte para {almacen_destino} ha finalizado con éxito!")
-
-                        st.success(f"¡Cálculo maestro para **{almacen_destino}** completado con éxito!")
+                        st.success(f"¡Cálculo maestro para **{almacen_destino}** completado!")
                         st.download_button(
                             label=f"📥 Descargar Reporte de {almacen_destino}",
                             data=output,
@@ -568,7 +525,6 @@ with tab_navasoft:
             if res['dansey'][1] == 0 and res['san luis'][1] == 0:
                 st.warning("No se encontraron ítems con pedido mayor a 0 para Dansey o San Luis.")
             else:
-                mostrar_notificacion_windows("RodaRestock 📦", "¡Las plantillas Navasoft se generaron con éxito!")
                 st.success("¡Plantillas generadas! Ya puedes descargarlas abajo.")
         except Exception as e:
             st.error(f"Error al procesar las plantillas: {e}")
