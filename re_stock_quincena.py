@@ -114,7 +114,7 @@ def loader(texto, emoji="⚙️", min_seg=2.5):
 
 # Configuración de la página web
 st.set_page_config(
-    page_title="RodaStock",
+    page_title="RodaRestock",
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
     layout="centered"
 )
@@ -433,23 +433,20 @@ with tab_calculo:
 
                             def calcular_reposicion(row):
                                 ventas = row['total_general']
-                                if ventas < 50: return 0, '⚪ Baja Rotación'
+                                if ventas < 50: return 0
                                 stk_actual_dest = row[nombre_col_dest]
                                 prom_alto = row['mayor_promedio_mensual']
                                 balance = int(round(stk_actual_dest - prom_alto))
-                                if balance >= 0: return balance, '🟢 Stock Suficiente / Excedente'
-                                else: return balance, '🔴 Déficit (Faltante)'
+                                return balance
 
-                            resultados = df_final.apply(calcular_reposicion, axis=1)
-                            df_final['cantidad_a_transferir'] = [r[0] for r in resultados]
-                            df_final['estado_reposicion'] = [r[1] for r in resultados]
+                            df_final['cantidad_a_transferir'] = df_final.apply(calcular_reposicion, axis=1)
                             df_final['pedido'] = df_final['cantidad_a_transferir']
                             df_final['sucursal'] = 'Dansey' if almacen_destino == 'San Luis' else 'San Luis'
 
                             columnas_ordenadas = [
                                 'codigo_comercial', 'codi_interno', 'descripcion', 'marca', 'cant_caja',
                                 'total_general', 'mayor_promedio_mensual', nombre_col_dest, nombre_col_ref,
-                                'precio_unitario', 'cantidad_a_transferir', 'pedido', 'sucursal', 'estado_reposicion'
+                                'precio_unitario', 'cantidad_a_transferir', 'pedido', 'sucursal'
                             ]
                         else:
                             stk_dan = procesar_stock_sisco_con_marca(f_stk_dansey, 'DANSEY')
@@ -464,17 +461,13 @@ with tab_calculo:
 
                             def calcular_reposicion_prov(row):
                                 ventas = row['total_general']
-                                if ventas < 50: return 0, '⚪ Baja Rotación'
+                                if ventas < 50: return 0
                                 stk_actual_dest = row[nombre_col_dest]
                                 prom_alto = row['mayor_promedio_mensual']
                                 balance = int(round(stk_actual_dest - prom_alto))
-                                if balance >= 0: return balance, '🟢 Stock Suficiente / Excedente'
-                                else: return balance, '🔴 Déficit (Faltante)'
+                                return balance
 
-                            resultados = df_final.apply(calcular_reposicion_prov, axis=1)
-                            df_final['cantidad_a_transferir'] = [r[0] for r in resultados]
-                            df_final['estado_reposicion'] = [r[1] for r in resultados]
-
+                            df_final['cantidad_a_transferir'] = df_final.apply(calcular_reposicion_prov, axis=1)
                             df_final['pedido'] = df_final['cantidad_a_transferir'].apply(lambda x: abs(x) if x < 0 else 0)
                             df_final['sucursal'] = ""
 
@@ -482,7 +475,7 @@ with tab_calculo:
                                 'codigo_comercial', 'codi_interno', 'descripcion', 'marca', 'cant_caja',
                                 'total_general', 'mayor_promedio_mensual', nombre_col_dest,
                                 'DANSEY', 'SAN LUIS',
-                                'precio_unitario', 'cantidad_a_transferir', 'pedido', 'sucursal', 'estado_reposicion'
+                                'precio_unitario', 'cantidad_a_transferir', 'pedido', 'sucursal'
                             ]
 
                         df_final_ordenado = df_final.sort_values(by=['prioridad_sisco'], ascending=True)[columnas_ordenadas]
@@ -493,7 +486,7 @@ with tab_calculo:
                             
                             worksheet = writer.sheets['Sheet1']
                             
-                            # 1. Estilos: Bordes punteados y rellenos de color suave
+                            # Estilos: Bordes punteados y rellenos de color suave
                             lado_punteado = Side(border_style="dotted", color="000000")
                             borde_punteado = Border(
                                 left=lado_punteado, right=lado_punteado,
@@ -502,7 +495,6 @@ with tab_calculo:
                             fill_rosado = PatternFill(start_color="FCE7F3", end_color="FCE7F3", fill_type="solid")
                             fill_verde = PatternFill(start_color="DCFCE7", end_color="DCFCE7", fill_type="solid")
 
-                            # Localizar dinámicamente las columnas por nombre (base 1 en Excel)
                             cols_list = list(df_final_ordenado.columns)
                             col_idx_transferir = cols_list.index('cantidad_a_transferir') + 1
                             col_idx_pedido = cols_list.index('pedido') + 1
@@ -518,10 +510,10 @@ with tab_calculo:
                                     elif cell.column == col_idx_pedido:
                                         cell.fill = fill_verde
 
-                            # 2. Fórmula para provincias
+                            # Fórmula para provincias (columna M es el pedido ahora)
                             if es_provincia:
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
-                                    worksheet[f'N{row_idx}'] = f'=IF(M{row_idx}<=0, "-", IF(M{row_idx}<=I{row_idx}, "Dansey", "San Luis"))'
+                                    worksheet[f'M{row_idx}'] = f'=IF(L{row_idx}<=0, "-", IF(L{row_idx}<=I{row_idx}, "Dansey", "San Luis"))'
 
                         output.seek(0)
                         st.success(f"¡Cálculo maestro para **{almacen_destino}** completado con éxito!")
