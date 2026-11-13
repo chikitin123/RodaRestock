@@ -6,6 +6,7 @@ import xlwt
 import time
 from contextlib import contextmanager
 from openpyxl.styles import Border, Side, PatternFill
+from openpyxl.utils import get_column_letter
 
 # =====================================================================
 # GENERADOR DE PLANTILLAS NAVASOFT (.xls) - misma estructura que la original
@@ -510,10 +511,14 @@ with tab_calculo:
                                     elif cell.column == col_idx_pedido:
                                         cell.fill = fill_verde
 
-                            # Fórmula para provincias (columna M es el pedido ahora)
+                            # Fórmula dinámica y automática para provincias (funciona para CUALQUIER sucursal)
                             if es_provincia:
+                                col_let_transf = get_column_letter(cols_list.index('cantidad_a_transferir') + 1)
+                                col_let_dansey = get_column_letter(cols_list.index('DANSEY') + 1)
+                                col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
+
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
-                                    worksheet[f'M{row_idx}'] = f'=IF(L{row_idx}<=0, "-", IF(L{row_idx}<=I{row_idx}, "Dansey", "San Luis"))'
+                                    worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_transf}{row_idx}<=0, "-", IF({col_let_transf}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
 
                         output.seek(0)
                         st.success(f"¡Cálculo maestro para **{almacen_destino}** completado con éxito!")
