@@ -219,7 +219,7 @@ with tab_calculo:
         if not archivos_ok:
             st.error("Por favor, sube todos los archivos requeridos antes de continuar.")
         else:
-            with loader(f"Procesando reporte para {almacen_destino}", "⚡"):
+            with loader(f"Procesando reporte para {almacen_destino}", "📦"):
                 try:
                     ruta_precios = "archivo_codigos_preciou.xlsx"
                     ruta_cajas = "numero_cajas.xlsx"
