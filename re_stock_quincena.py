@@ -125,6 +125,7 @@ def loader(texto, emoji="⚡", min_seg=0.5):
             time.sleep(restante)
         ph.empty()
 
+
 st.set_page_config(
     page_title="RodaRestock",
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
@@ -445,10 +446,7 @@ with tab_calculo:
 
                             df_final['cantidad_a_transferir'] = df_final.apply(calcular_reposicion, axis=1)
                             df_final['pedido'] = df_final['cantidad_a_transferir']
-                            
-                            # AQUÍ ESTÁ LA LÓGICA CORRECTA: Si el pedido es mayor a 0, coloca la sucursal de referencia; si es 0 o menor, se queda vacío ("")
-                            sucu_ref = 'Dansey' if almacen_destino == 'San Luis' else 'San Luis'
-                            df_final['sucursal'] = df_final['pedido'].apply(lambda x: sucu_ref if pd.notna(x) and x > 0 else "")
+                            df_final['sucursal'] = ""
 
                             columnas_ordenadas = [
                                 'codigo_comercial', 'codi_interno', 'descripcion', 'marca', 'cant_caja',
@@ -493,7 +491,7 @@ with tab_calculo:
                             
                             worksheet = writer.sheets['Sheet1']
                             
-                            # Restauración completa de bordes punteados y colores
+                            # Estilos y colores
                             lado_punteado = Side(border_style="dotted", color="000000")
                             borde_punteado = Border(
                                 left=lado_punteado, right=lado_punteado,
@@ -517,11 +515,16 @@ with tab_calculo:
                                     elif cell.column == col_idx_pedido:
                                         cell.fill = fill_verde
 
-                            if es_provincia:
-                                col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
-                                col_let_dansey = get_column_letter(cols_list.index('DANSEY') + 1)
-                                col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
+                            # Fórmulas para la columna sucursal según corresponda
+                            col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
+                            col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
 
+                            if not es_provincia:
+                                sucu_ref = 'Dansey' if almacen_destino == 'San Luis' else 'San Luis'
+                                for row_idx in range(2, len(df_final_ordenado) + 2):
+                                    worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "", "{sucu_ref}")'
+                            else:
+                                col_let_dansey = get_column_letter(cols_list.index('DANSEY') + 1)
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
                                     worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "-", IF({col_let_pedido}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
 
