@@ -104,7 +104,7 @@ def procesar_maestro_navasoft(df_term):
 # LOADER ANIMADO
 # =====================================================================
 @contextmanager
-def loader(texto, emoji="⚡", min_seg=0.5):
+def loader(texto, emoji="📦", min_seg=0.5):
     inicio = time.time()
     ph = st.empty()
     ph.markdown(
