@@ -124,8 +124,6 @@ def loader(texto, emoji="⚡", min_seg=0.5):
         if restante > 0:
             time.sleep(restante)
         ph.empty()
-
-
 st.set_page_config(
     page_title="RodaRestock",
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
@@ -207,8 +205,8 @@ with tab_calculo:
         f_stk_sanluis = f_stk_ref
         f_stk_dansey = None
     else:
-        f_stk_dansey = st.file_uploader("3. Stock Actual (Dansey)", type=["xlsx", "xls"])
-        f_stk_sanluis = st.file_uploader("4. Stock Actual (San Luis)", type=["xlsx", "xls"])
+        f_stk_sanluis = st.file_uploader("3. Stock Actual (San Luis)", type=["xlsx", "xls"])
+        f_stk_dansey = st.file_uploader("4. Stock Actual (Dansey)", type=["xlsx", "xls"])
 
     st.divider()
 
@@ -454,15 +452,15 @@ with tab_calculo:
                                 'precio_unitario', 'cantidad_a_transferir', 'pedido', 'sucursal'
                             ]
                         else:
-                            stk_dan = procesar_stock_sisco_con_marca(f_stk_dansey, 'DANSEY')
                             stk_sl = procesar_stock_sisco_con_marca(f_stk_sanluis, 'SAN LUIS')
+                            stk_dan = procesar_stock_sisco_con_marca(f_stk_dansey, 'DANSEY')
 
+                            df_final = pd.merge(df_final, stk_sl, left_on=['codigo_comercial', 'marca'], right_on=['codigo_comercial', 'marca'], how='left')
                             df_final = pd.merge(df_final, stk_dan, left_on=['codigo_comercial', 'marca'], right_on=['codigo_comercial', 'marca'], how='left')
-                            df_final = pd.merge(df_final, stk_sl, left_on=['codigo_comercial', 'marca'], right_on=['codigo_comercial', 'marca'], how='left', suffixes=('_dan', '_sl'))
 
                             df_final[nombre_col_dest] = df_final[nombre_col_dest].fillna(0)
-                            if 'DANSEY' in df_final.columns: df_final['DANSEY'] = df_final['DANSEY'].fillna(0)
                             if 'SAN LUIS' in df_final.columns: df_final['SAN LUIS'] = df_final['SAN LUIS'].fillna(0)
+                            if 'DANSEY' in df_final.columns: df_final['DANSEY'] = df_final['DANSEY'].fillna(0)
 
                             def calcular_reposicion_prov(row):
                                 ventas = row['total_general']
@@ -479,7 +477,7 @@ with tab_calculo:
                             columnas_ordenadas = [
                                 'codigo_comercial', 'codi_interno', 'descripcion', 'marca', 'cant_caja',
                                 'total_general', 'mayor_promedio_mensual', nombre_col_dest,
-                                'DANSEY', 'SAN LUIS',
+                                'SAN LUIS', 'DANSEY',
                                 'precio_unitario', 'cantidad_a_transferir', 'pedido', 'sucursal'
                             ]
 
@@ -515,7 +513,7 @@ with tab_calculo:
                                     elif cell.column == col_idx_pedido:
                                         cell.fill = fill_verde
 
-                            # Fórmulas para la columna sucursal según corresponda
+                            # Fórmulas para la columna sucursal
                             col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
                             col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
 
