@@ -438,7 +438,7 @@ with tab_calculo:
 
                             def calcular_reposicion(row):
                                 ventas = row['total_general']
-                                if ventas < 50: return 0
+                         
                                 stk_actual_dest = row[nombre_col_dest]
                                 prom_alto = row['mayor_promedio_mensual']
                                 balance = int(round(stk_actual_dest - prom_alto))
@@ -466,7 +466,7 @@ with tab_calculo:
 
                             def calcular_reposicion_prov(row):
                                 ventas = row['total_general']
-                                if ventas < 50: return 0
+                               
                                 stk_actual_dest = row[nombre_col_dest]
                                 prom_alto = row['mayor_promedio_mensual']
                                 balance = int(round(stk_actual_dest - prom_alto))
