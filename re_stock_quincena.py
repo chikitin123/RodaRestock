@@ -104,7 +104,7 @@ def procesar_maestro_navasoft(df_term):
 # LOADER ANIMADO
 # =====================================================================
 @contextmanager
-def loader(texto, emoji="📦", min_seg=0.5):
+def loader(texto, emoji="⚡", min_seg=0.5):
     inicio = time.time()
     ph = st.empty()
     ph.markdown(
@@ -124,12 +124,13 @@ def loader(texto, emoji="📦", min_seg=0.5):
         if restante > 0:
             time.sleep(restante)
         ph.empty()
+
+
 st.set_page_config(
     page_title="RodaRestock",
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
     layout="centered"
 )
-
 st.markdown("""
     <style>
     .main { background-color: #0f172a; color: #f1f5f9; }
@@ -219,7 +220,7 @@ with tab_calculo:
         if not archivos_ok:
             st.error("Por favor, sube todos los archivos requeridos antes de continuar.")
         else:
-            with loader(f"Procesando reporte para {almacen_destino}", "📦"):
+            with loader(f"Procesando reporte para {almacen_destino}", "⚡"):
                 try:
                     ruta_precios = "archivo_codigos_preciou.xlsx"
                     ruta_cajas = "numero_cajas.xlsx"
@@ -513,7 +514,7 @@ with tab_calculo:
                                     elif cell.column == col_idx_pedido:
                                         cell.fill = fill_verde
 
-                            # Fórmulas para la columna sucursal
+                            # Fórmulas para la columna sucursal (garantizado para ambos casos)
                             col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
                             col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
 
@@ -524,7 +525,7 @@ with tab_calculo:
                             else:
                                 col_let_dansey = get_column_letter(cols_list.index('DANSEY') + 1)
                                 for row_idx in range(2, len(df_final_ordenado) + 2):
-                                    worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "-", IF({col_let_pedido}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
+                                    worksheet[f'{col_let_sucursal}{row_idx}'] = f'=IF({col_let_pedido}{row_idx}<=0, "", IF({col_let_pedido}{row_idx}<={col_let_dansey}{row_idx}, "Dansey", "San Luis"))'
 
                         output.seek(0)
                         st.success(f"¡Cálculo maestro para **{almacen_destino}** completado!")
