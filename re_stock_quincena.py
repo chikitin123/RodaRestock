@@ -131,6 +131,7 @@ st.set_page_config(
     page_icon="logo.jpg",  # También funciona si está en subcarpeta: "assets/logo.png"
     layout="centered"
 )
+
 st.markdown("""
     <style>
     .main { background-color: #0f172a; color: #f1f5f9; }
@@ -444,7 +445,7 @@ with tab_calculo:
                                 return balance
 
                             df_final['cantidad_a_transferir'] = df_final.apply(calcular_reposicion, axis=1)
-                            df_final['pedido'] = df_final['cantidad_a_transferir']
+                            df_final['pedido'] = ""      # Queda libre para que tú llenes las cantidades
                             df_final['sucursal'] = ""
 
                             columnas_ordenadas = [
@@ -472,7 +473,7 @@ with tab_calculo:
                                 return balance
 
                             df_final['cantidad_a_transferir'] = df_final.apply(calcular_reposicion_prov, axis=1)
-                            df_final['pedido'] = df_final['cantidad_a_transferir'].apply(lambda x: abs(x) if x < 0 else 0)
+                            df_final['pedido'] = ""      # Queda libre para que tú llenes las cantidades
                             df_final['sucursal'] = ""
 
                             columnas_ordenadas = [
@@ -514,7 +515,7 @@ with tab_calculo:
                                     elif cell.column == col_idx_pedido:
                                         cell.fill = fill_verde
 
-                            # Fórmulas para la columna sucursal (garantizado para ambos casos)
+                            # Fórmulas para la columna sucursal
                             col_let_pedido = get_column_letter(cols_list.index('pedido') + 1)
                             col_let_sucursal = get_column_letter(cols_list.index('sucursal') + 1)
 
